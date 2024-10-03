@@ -15,6 +15,9 @@ namespace DotNetInterview
 
     public class RegistryService : IRegistryService
     {
+        private readonly string REGISTRY_SUBKEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+        private readonly string REGISTRY_SUBKEY_X64 = @"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
+
         private ILogger<RegistryService> _logger;
 
         public RegistryService(ILogger<RegistryService> logger)
@@ -24,13 +27,26 @@ namespace DotNetInterview
 
         public bool CheckIfInstalled(string softwareName)
         {
-            // TODO: Implement this method to check if the given software name
-            // can be found as an installed application in the Windows registry.
+            bool foundAndIsInstalled = false;
+            try
+            {
+                RegistryKey registryKey = Registry.LocalMachine.OpenSubKey(REGISTRY_SUBKEY) ??
+                      Registry.LocalMachine.OpenSubKey(
+                          REGISTRY_SUBKEY_X64);
 
-            // The search should be case insensitive and should
-            // include partial matches.
+                if (registryKey == null) return false;
 
-            throw new NotImplementedException();
+                foundAndIsInstalled = registryKey.GetSubKeyNames()
+                    .Select(keyName => registryKey.OpenSubKey(keyName))
+                    .Select(subkey => subkey.GetValue("DisplayName") as string)
+                    .Any(displayName => displayName != null && displayName.ToLower().Contains(softwareName.ToLower()));
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Exception in RegistryService.CheckIfInstalled for softwareName={softwareName}.", softwareName);
+            }
+
+            return foundAndIsInstalled;
         }
     }
 }
