@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DotNetInterview
@@ -12,14 +9,25 @@ namespace DotNetInterview
         Task ReportSoftwareInstallationStatus(string softwareName);
     }
 
-    public class SoftwareReporter : ISoftwareReporter
+    /// <summary>
+    /// Reports on the installed software.
+    /// </summary>
+    public class SoftwareReporter(IRegistryService registryService, IApiService apiService, ILogger<SoftwareReporter> logger) : ISoftwareReporter
     {
-        // TODO: Finish implementing this class so the unit tests
-        // in SoftwareReporterTests are passing.
-
-        public Task ReportSoftwareInstallationStatus(string softwareName)
+        /// <summary>
+        /// Check if a given software is installed and report the status to the Api.
+        /// </summary>
+        /// <param name="softwareName">The name of the software to check.</param>
+        public Task ReportSoftwareInstallationStatus(string? softwareName)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(softwareName)) throw new ArgumentNullException(nameof(softwareName));
+            
+            var isInstalled = registryService.CheckIfInstalled(softwareName);
+            var status = isInstalled ? "is" : "is not";
+            logger.LogDebug("{softwareName} {status} installed.", softwareName, status);
+            apiService.SendInstalledSoftware(softwareName, isInstalled);
+            
+            return Task.CompletedTask;
         }
     }
 }
