@@ -14,8 +14,18 @@ namespace DotNetInterview
 
     public class SoftwareReporter : ISoftwareReporter
     {
+        private readonly IRegistryService _registryService;
+        private readonly IApiService _apiService;
+        private readonly ILogger<SoftwareReporter> _logger;
+
         // TODO: Finish implementing this class so the unit tests
         // in SoftwareReporterTests are passing.
+        public SoftwareReporter(IRegistryService registryService, IApiService apiService, ILogger<SoftwareReporter> logger)
+        {
+            _registryService = registryService;
+            _apiService = apiService;
+            _logger = logger;
+        }
 
         public Task ReportSoftwareInstallationStatus(string softwareName)
         {
