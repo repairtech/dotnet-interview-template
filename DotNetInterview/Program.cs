@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace DotNetInterview
 {
-    class Program
+    public class Program
     {
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging(builder =>
@@ -23,12 +23,9 @@ namespace DotNetInterview
             serviceCollection.RegisterSoftwareReporter();
             var container = serviceCollection.BuildServiceProvider();
 
+            var softwareReporter = container.GetService<ISoftwareReporter>();
 
-            // TODO: Retrieve an instance of SoftwareReporter from the
-            // dependency injection container.
-
-            // TODO: Call ReportSoftwareInstallationStatus method, using "Syncro"
-            // as the software name.
+            await softwareReporter.ReportSoftwareInstallationStatus("Syncro");
 
             Console.WriteLine("\nPress any key to exit.");
             Console.ReadKey();
