@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 namespace DotNetInterview
@@ -19,7 +18,7 @@ namespace DotNetInterview
 
         /// <summary>
         /// Check if the given software name can be found as an installed application in the Windows registry.
-        /// Is case-insensitive and will return partial matches.
+        /// Is case-insensitive and will return partial matches. Be specific to avoid false positives.
         /// </summary>
         /// <param name="softwareName">Name of the installed software.</param>
         /// <returns>True when it is installed.</returns>
@@ -36,11 +35,11 @@ namespace DotNetInterview
             if (uninstallers32Bit is null) return false;
 
             logger.LogDebug("Checking the 32 bit uninstaller list for: {softwareName}", softwareName);
-            return  UninstallerKeyContains(softwareName, uninstallers32Bit);
+            return UninstallerKeyContains(softwareName, uninstallers32Bit);
         }
 
         /// <summary>
-        /// Check the uninstallers registry key to see if it contains a given software name.
+        /// Check an uninstallers registry branch to see if it contains a given software name.
         /// </summary>
         /// <param name="softwareName">The name of the software to check for.</param>
         /// <param name="uninstallers">The uninstaller key in the registry to search.</param>
