@@ -18,8 +18,9 @@ namespace DotNetInterview
         private readonly IApiService _apiService;
         private readonly ILogger<SoftwareReporter> _logger;
 
-        // TODO: Finish implementing this class so the unit tests
-        // in SoftwareReporterTests are passing.
+        /// <summary>
+        /// Reports on the installed software.
+        /// </summary>
         public SoftwareReporter(IRegistryService registryService, IApiService apiService, ILogger<SoftwareReporter> logger)
         {
             _registryService = registryService;
@@ -27,9 +28,20 @@ namespace DotNetInterview
             _logger = logger;
         }
 
-        public Task ReportSoftwareInstallationStatus(string softwareName)
+        /// <summary>
+        /// Check if a given software is installed and report the status to the Api.
+        /// </summary>
+        /// <param name="softwareName">The name of the software to check.</param>
+        public Task ReportSoftwareInstallationStatus(string? softwareName)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(softwareName)) throw new ArgumentNullException(nameof(softwareName));
+            
+            var isInstalled = _registryService.CheckIfInstalled(softwareName);
+            var status = isInstalled ? "is" : "is not";
+            _logger.LogDebug("{softwareName} {status} installed.", softwareName, status);
+            _apiService.SendInstalledSoftware(softwareName, isInstalled);
+            
+            return Task.CompletedTask;
         }
     }
 }
