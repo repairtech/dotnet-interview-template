@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DotNetInterview
 {
@@ -13,18 +11,11 @@ namespace DotNetInterview
         bool CheckIfInstalled(string softwareName);
     }
 
-    public class RegistryService : IRegistryService
+    public class RegistryService(ILogger<RegistryService> logger) : IRegistryService
     {
-        private const string UninstallPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+        private const string UninstallPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
 
-        private const string UninstallPath32Bit = @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
-
-        private readonly ILogger<RegistryService> _logger;
-
-        public RegistryService(ILogger<RegistryService> logger)
-        {
-            _logger = logger;
-        }
+        private const string UninstallPath32Bit = @"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
 
         /// <summary>
         /// Check if the given software name can be found as an installed application in the Windows registry.
@@ -34,17 +25,17 @@ namespace DotNetInterview
         /// <returns>True when it is installed.</returns>
         public bool CheckIfInstalled(string softwareName)
         {
-            var uninstallers = Registry.LocalMachine.OpenSubKey(UninstallPath);
+            using var uninstallers = Registry.LocalMachine.OpenSubKey(UninstallPath);
             if (uninstallers != null)
             {
-                _logger.LogDebug("Checking the default uninstaller list for: {softwareName}", softwareName);
+                logger.LogDebug("Checking the default uninstaller list for: {softwareName}", softwareName);
                 if (UninstallerKeyContains(softwareName, uninstallers)) return true;
             }
 
-            var uninstallers32Bit = Registry.LocalMachine.OpenSubKey(UninstallPath32Bit);
+            using var uninstallers32Bit = Registry.LocalMachine.OpenSubKey(UninstallPath32Bit);
             if (uninstallers32Bit is null) return false;
 
-            _logger.LogDebug("Checking the 32 bit uninstaller list for: {softwareName}", softwareName);
+            logger.LogDebug("Checking the 32 bit uninstaller list for: {softwareName}", softwareName);
             return  UninstallerKeyContains(softwareName, uninstallers32Bit);
         }
 
@@ -57,14 +48,18 @@ namespace DotNetInterview
         private bool UninstallerKeyContains(string softwareName, RegistryKey uninstallers)
         {
             var installedKeys = uninstallers.GetSubKeyNames().Select(key =>
-            {
-                var uninstaller  = uninstallers.OpenSubKey(key);
-                var displayName = uninstaller?.GetValue("DisplayName").ToString();
-                _logger.LogTrace(displayName);
+             {
+                using var uninstaller  = uninstallers.OpenSubKey(key);
+                
+                // Use the Display Name or fallback to the Key, which sometimes contains the name of the software.
+                var displayName = uninstaller?.GetValue("DisplayName")?.ToString() ?? 
+                                  uninstaller?.Name.Substring(uninstaller.Name.LastIndexOf('\\') + 1);
+
+                logger.LogTrace(displayName);
                 return displayName ?? "";
             });
 
-            return installedKeys.Any(name => name.IndexOf(softwareName, StringComparison.OrdinalIgnoreCase) >= 0);
+            return installedKeys.Any(name => name.IndexOf(softwareName, StringComparison.InvariantCultureIgnoreCase) >= 0);
         }
     }
 }
